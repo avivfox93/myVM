@@ -23,6 +23,13 @@ JNIEXPORT jstring JNICALL Java_Debugger_decompileFile(JNIEnv * , jobject );
 
 /*
  * Class:     Debugger
+ * Method:    updateMemory
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_Debugger_updateMemory(JNIEnv * env, jobject obj);
+
+/*
+ * Class:     Debugger
  * Method:    loadFile
  * Signature: (Ljava/lang/String;)V
  */

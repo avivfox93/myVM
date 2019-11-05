@@ -7,7 +7,6 @@
 #include "Utils.h"
 #include "Hardware.h"
 #include "Registers.h"
-//#include "Decompiler.h"
 #include <string>
 #include <stdio.h>
 #include <unistd.h>
@@ -29,6 +28,17 @@ JNIEXPORT jboolean JNICALL Java_Debugger_begin(JNIEnv * env, jobject obj,
 JNIEXPORT jstring JNICALL Java_Debugger_decompileFile(JNIEnv * env, jobject obj) {
 	jstring result = env->NewStringUTF(decompiledStrings(commands,codeSize).c_str());
 	return result;
+}
+
+/*
+ * Class:     Debugger
+ * Method:    updateMemory
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_Debugger_updateMemory(JNIEnv * env, jobject obj){
+	FILE* file = fopen(MEMORY_FILE_NAME, "r");
+	fread(MEMORY_SEGMENT, 1, MEMORY_SIZE * 1024, file);
+	fclose(file);
 }
 
 /*

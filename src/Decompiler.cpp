@@ -16,10 +16,10 @@ int main(int argc, char* argv[]){
 		exit(EXIT_FAILURE);
 	}
 	Command** commands = new Command*[CODE_SEGMENT_SIZE * 32];
-	loadBinaryFromFile(argv[1],commands);
+	uint32_t codeSize = loadCodeFromFile(argv[1],commands);
 	uint32_t size = loadDataSegmentFromFile(argv[1], dataSegment);
 	printDataSegment(dataSegment,size);
-	printDecompiledStrings(commands,CODE_SEGMENT_SIZE * 32);
+	printDecompiledStrings(commands,codeSize);
 	return 0;
 }
 

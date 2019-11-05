@@ -24,6 +24,7 @@
 
 void runReset(void);
 size_t loadBinaryFromFile(const char* dir, Command* commands[]);
+size_t loadCodeFromFile(const char* dir, Command* commands[]);
 size_t loadDataSegmentFromFile(const char* dir, uint8_t* buffer);
 void runCommands(Command* commands[]);
 bool runCommand(Command* commands[]);

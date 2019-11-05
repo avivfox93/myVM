@@ -14,6 +14,7 @@
 #include "jni_md.h"
 
 Command** commands = new Command*[CODE_SEGMENT_SIZE * 32];
+uint32_t codeSize = 0;
 
 JNIEXPORT jboolean JNICALL Java_Debugger_begin(JNIEnv * env, jobject obj,
 		jstring str) {
@@ -26,7 +27,7 @@ JNIEXPORT jboolean JNICALL Java_Debugger_begin(JNIEnv * env, jobject obj,
  * Signature: ()V
  */
 JNIEXPORT jstring JNICALL Java_Debugger_decompileFile(JNIEnv * env, jobject obj) {
-	jstring result = env->NewStringUTF(decompiledStrings(commands,CODE_SEGMENT_SIZE*32).c_str());
+	jstring result = env->NewStringUTF(decompiledStrings(commands,codeSize).c_str());
 	return result;
 }
 
@@ -40,7 +41,8 @@ JNIEXPORT int JNICALL Java_Debugger_loadFile(JNIEnv * env, jobject obj,
 	jniCallbackInit(env,obj); // @suppress("Function cannot be resolved")
 	runReset();
 	const char* fileName = env->GetStringUTFChars(str, NULL);
-	return loadBinaryFromFile(fileName, commands);
+	codeSize = loadCodeFromFile(fileName, commands);
+	return codeSize;
 }
 
 /*

@@ -6,6 +6,7 @@
  */
 #include "Utils.h"
 #include "Registers.h"
+#include <iostream>
 
 void runCommands(Command* commands[]){
 	while(((PC - CODE_OFFSET)/4) < (CODE_SEGMENT_SIZE * 32)){
@@ -25,6 +26,21 @@ size_t loadDataSegmentFromFile(const char* dir, uint8_t* buffer){
 	return dataSize;
 }
 
+size_t loadCodeFromFile(const char* dir, Command* commands[]){
+	FILE* file;
+	size_t pos;
+	size_t idx = 0;
+	uint32_t data,dataSize;
+	file = fopen(dir,"r");
+	fread((void*)&dataSize,4,1,file);
+	if(dataSize)
+		fread((void*)MEMORY_SEGMENT,1,dataSize,file);
+	while((pos = fread((void*)&data,4,1,file)) != 0)
+		commands[idx++] = commandFromBin(data);
+	fclose(file);
+	return idx;
+}
+
 size_t loadBinaryFromFile(const char* dir, Command* commands[]){
 	FILE* file;
 	size_t pos;
@@ -34,12 +50,10 @@ size_t loadBinaryFromFile(const char* dir, Command* commands[]){
 	fread((void*)&dataSize,4,1,file);
 	if(dataSize)
 		fread((void*)MEMORY_SEGMENT,1,dataSize,file);
-	while((pos = fread((void*)&data,4,1,file)) != 0){
+	while((pos = fread((void*)&data,4,1,file)) != 0)
 		commands[idx++] = commandFromBin(data);
-	}
-	while(idx < (CODE_SEGMENT_SIZE * 32)){
+	while(idx < (CODE_SEGMENT_SIZE * 32))
 		commands[idx++] = new Nop();
-	}
 	fclose(file);
 	return idx;
 }
@@ -54,6 +68,7 @@ const char* toBin(uint32_t data){
 }
 
 void runReset(void){
+	RUNNING_FLAG = READY_FLAG;
 	PC = CODE_OFFSET;
 	for(int i = 0 ; i < 32 ; i++){
 		REGISTERS[i] = 0;

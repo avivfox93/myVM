@@ -15,9 +15,9 @@
 #include <string>
 #include <sstream>
 
-#define SIZE_BYTE	0
-#define SIZE_HALF	1
-#define SIZE_WORD	2
+//#define SIZE_BYTE	0
+//#define SIZE_HALF	1
+//#define SIZE_WORD	2
 
 #define OP_NOP		0x00
 #define OP_JUMP		0x01
@@ -63,8 +63,6 @@ uint32_t storeBin(uint16_t offset, uint8_t size, uint8_t from, uint8_t to, uint8
 uint32_t setBin(uint8_t type, uint8_t reg1, uint8_t reg2, uint8_t save, uint8_t opcode);
 uint32_t branchBin(int16_t lines, uint8_t type, uint8_t reg1, uint8_t reg2, uint8_t opcode);
 uint32_t loadiBin(uint32_t data, uint8_t reg, uint8_t opcode);
-
-
 
 struct jump{
 	uint32_t address:	27;
@@ -172,11 +170,19 @@ union binData{
 
 class Command{
 public:
+	enum BinaryOp{
+		EQ = 0,NEQ = 1,GT = 2,LT = 3,GE = 4,LE = 5, SIZE_BYTE = 6, SIZE_HALF = 7, SIZE_WORD = 8, LEFT = 9, RIGHT = 10
+	};
+	enum SIGN{
+		UNSIGNED = 0, SIGNED = 1
+	};
 	Command(){};
 	virtual void run(){};
 	virtual uint32_t toBin(){return 0;};
 	virtual std::string toString(){return "nop";};
 	virtual ~Command(){};
+	virtual std::string* getLabel(){return nullptr;}
+	virtual void setLabel(std::string* label){}
 };
 
 class MluImmediate : public Command{
@@ -257,7 +263,7 @@ class MulImmediate : public MluImmediate{
 public:
 	MulImmediate(uint8_t save, uint8_t reg, uint16_t data, enum SIGN sign) : MluImmediate(save, reg, data, sign){}
 	virtual void run(){
-		switch((MluImmediate::SIGN)_sign){
+		switch((Command::SIGN)_sign){
 		case UNSIGNED:
 			REGISTERS[_save] = REGISTERS[_reg] * (uint16_t)_data;
 			break;
@@ -293,16 +299,17 @@ public:
 	virtual uint32_t toBin(){
 		return jumpBin(_address);
 	}
+	virtual std::string* getLabel(){return _label;}
+	virtual void setLabel(std::string* label){_label = label;}
+	void setAddress(uint32_t address){_address = address;};
 private:
+	std::string* _label = nullptr;
 	uint32_t _address;
 };
 
 class Branch : public Command{
 public:
-	enum TYPE{
-		EQ = 0,NEQ = 1,GT = 2,LT = 3,GE = 4,LE = 5
-	};
-	Branch(int16_t lines, enum TYPE type, uint8_t reg1, uint8_t reg2){
+	Branch(int16_t lines, enum BinaryOp type, uint8_t reg1, uint8_t reg2){
 		_lines = lines; _type = type; _reg1 = reg1; _reg2 = reg2;
 	}
 	virtual uint32_t toBin(){
@@ -335,10 +342,14 @@ public:
 		return ss.str();
 	}
 	virtual void run();
+	virtual std::string* getLabel(){return _label;}
+	virtual void setLabel(std::string* label){_label = label;}
+	void setLines(uint32_t lines){_lines = lines;};
 private:
+	std::string* _label = nullptr;
 	int16_t _lines;
 	uint8_t _reg1 = 0,_reg2 = 0;
-	enum TYPE _type;
+	enum BinaryOp _type;
 };
 
 class Add : public Mlu{
@@ -483,10 +494,7 @@ public:
 
 class Set : public Command{
 public:
-	enum TYPE{
-		EQ,NEQ,GT,LT,GE,LE
-	};
-	Set(uint8_t reg1, uint8_t reg2, uint8_t save, enum TYPE type){
+	Set(uint8_t save, uint8_t reg1, uint8_t reg2, enum BinaryOp type){
 		_reg1 = reg1; _reg2 = reg2; _save = save; _type = type;
 	}
 	virtual uint32_t toBin(){
@@ -525,7 +533,7 @@ public:
 
 private:
 	uint8_t _reg1, _reg2, _save;
-	enum TYPE _type;
+	enum BinaryOp _type;
 };
 
 class Load : public Command{
@@ -539,6 +547,7 @@ public:
 		ss << REG_NAME[_to] << "," << REG_NAME[_from] << "," << _offset;
 		return ss.str();
 	}
+
 protected:
 	uint8_t _from,_to;
 	int16_t _offset;
@@ -548,7 +557,7 @@ class LoadByte : public Load{
 public:
 	LoadByte(uint8_t from, uint8_t to, int16_t offset) : Load(from,to,offset){};
 	virtual uint32_t toBin(){
-		return loadBin(_offset,SIZE_BYTE,_from,_to,OP_LOAD);
+		return loadBin(_offset,SIZE_BYTE - SIZE_BYTE,_from,_to,OP_LOAD);
 	}
 	virtual std::string toString(){
 		std::string str = Load::toString();
@@ -565,7 +574,7 @@ class LoadHalf : public Load{
 public:
 	LoadHalf(uint8_t from, uint8_t to, int16_t offset) : Load(from,to,offset){};
 	virtual uint32_t toBin(){
-		return loadBin(_offset,SIZE_HALF,_from,_to,OP_LOAD);
+		return loadBin(_offset,SIZE_HALF - SIZE_BYTE,_from,_to,OP_LOAD);
 	}
 	virtual std::string toString(){
 		std::string str = Load::toString();
@@ -584,7 +593,7 @@ class LoadWord : public Load{
 public:
 	LoadWord(uint8_t from, uint8_t to, int16_t offset) : Load(from,to,offset){};
 	virtual uint32_t toBin(){
-		return loadBin(_offset,SIZE_WORD,_from,_to,OP_LOAD);
+		return loadBin(_offset,SIZE_WORD - SIZE_BYTE,_from,_to,OP_LOAD);
 	}
 	virtual std::string toString(){
 		std::string str = Load::toString();
@@ -618,7 +627,7 @@ class StoreWord : public Store{
 public:
 	StoreWord(uint8_t addressReg, uint8_t dataReg, int16_t offset) : Store(addressReg,dataReg,offset){}
 	virtual uint32_t toBin(){
-		return storeBin(_offset,SIZE_WORD,_dataReg,_addressReg,OP_STORE);
+		return storeBin(_offset,SIZE_WORD - SIZE_BYTE,_dataReg,_addressReg,OP_STORE);
 	}
 	virtual std::string toString(){
 		std::string str = Store::toString();
@@ -637,7 +646,7 @@ class StoreHalf : public Store{
 public:
 	StoreHalf(uint8_t addressReg, uint8_t dataReg, int16_t offset) : Store(addressReg,dataReg,offset){}
 	virtual uint32_t toBin(){
-		return storeBin(_offset,SIZE_HALF,_dataReg,_addressReg,OP_STORE);
+		return storeBin(_offset,SIZE_HALF - SIZE_BYTE,_dataReg,_addressReg,OP_STORE);
 	}
 	virtual std::string toString(){
 		std::string str = Store::toString();
@@ -656,7 +665,7 @@ class StoreByte : public Store{
 public:
 	StoreByte(uint8_t addressReg, uint8_t dataReg, int16_t offset) : Store(addressReg,dataReg,offset){}
 	virtual uint32_t toBin(){
-		return storeBin(_offset,SIZE_BYTE,_dataReg,_addressReg,OP_STORE);
+		return storeBin(_offset,SIZE_BYTE - SIZE_BYTE,_dataReg,_addressReg,OP_STORE);
 	}
 	virtual std::string toString(){
 		std::string str = Store::toString();
@@ -685,13 +694,7 @@ public:
 
 class ShiftImmediate : public Command{
 public:
-	enum DIRECTION{
-		LEFT, RIGHT
-	};
-	enum SIGN{
-		UNSIGNED, SIGNED
-	};
-	ShiftImmediate(uint8_t save, uint8_t reg, uint8_t shift, enum DIRECTION dir, enum SIGN sign){
+	ShiftImmediate(uint8_t save, uint8_t reg, uint8_t shift, enum BinaryOp dir, enum SIGN sign){
 		_save = save; _reg = reg; _shift = shift; _dir = dir; _sign = sign;
 	}
 	virtual uint32_t toBin(){
@@ -717,19 +720,13 @@ public:
 	virtual void run();
 private:
 	uint8_t _reg, _shift, _save;
-	enum DIRECTION _dir;
+	enum BinaryOp _dir;
 	enum SIGN _sign;
 };
 
 class Shift : public Command{
 public:
-	enum DIRECTION{
-		LEFT, RIGHT
-	};
-	enum SIGN{
-		UNSIGNED, SIGNED
-	};
-	Shift(uint8_t save, uint8_t reg1, uint8_t reg2, enum DIRECTION dir, enum SIGN sign){
+	Shift(uint8_t save, uint8_t reg1, uint8_t reg2, enum BinaryOp dir, enum SIGN sign){
 		_save = save; _reg1 = reg1; _reg2 = reg2; _dir = dir; _sign = sign;
 	}
 	virtual uint32_t toBin(){
@@ -738,7 +735,7 @@ public:
 	std::string toString(){
 		std::stringstream ss;
 		if(_sign == SIGNED)
-			ss << "sv";
+			ss << "sa";
 		else
 			ss << "sl";
 		switch(_dir){
@@ -755,7 +752,7 @@ public:
 	virtual void run();
 private:
 	uint8_t _reg1, _reg2, _save;
-	enum DIRECTION _dir;
+	enum BinaryOp _dir;
 	enum SIGN _sign;
 };
 

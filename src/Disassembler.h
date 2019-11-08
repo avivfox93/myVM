@@ -5,12 +5,12 @@
  *      Author: Aviv
  */
 
-#ifndef DECOMPILER_H_
-#define DECOMPILER_H_
+#ifndef DISASSEMBLER_H_
+#define DISASSEMBLER_H_
 
 #include "Command.h"
 #include "Registers.h"
 
 
 
-#endif /* DECOMPILER_H_ */
+#endif /* DISASSEMBLER_H_ */

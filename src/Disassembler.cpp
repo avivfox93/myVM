@@ -5,14 +5,14 @@
  *      Author: Aviv
  */
 
-#include "Decompiler.h"
+#include "Disassembler.h"
 #include "Utils.h"
 
 uint8_t dataSegment[MEMORY_SIZE * 1028];
 
 int main(int argc, char* argv[]){
 	if(argc != 2){
-		fprintf(stderr,"Usage: runtime filename");
+		fprintf(stderr,"Usage: <input-file>");
 		exit(EXIT_FAILURE);
 	}
 	Command** commands = new Command*[CODE_SEGMENT_SIZE * 32];

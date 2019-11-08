@@ -78,13 +78,13 @@ uint32_t loadiBin(uint32_t data, uint8_t reg, uint8_t opcode){
 }
 
 Jump* jumpFromBin(uint32_t data){
-	return new Jump(data >> 5);
+	return new Jump((data << 5)>>5);
 }
 Branch* branchFromBin(uint32_t data){
 	int16_t padding = 0;
 	if((data >> 13)&1)//
 		padding = 0xc000;
-	return new Branch((int16_t)((data&0x3fff) | padding),(Branch::TYPE)((data >> 14)&0x7),(data >> 17)&REGISTER_MASK,(data >> 22)&REGISTER_MASK);
+	return new Branch((int16_t)((data&0x3fff) | padding),(Branch::BinaryOp)((data >> 14)&0x7),(data >> 17)&REGISTER_MASK,(data >> 22)&REGISTER_MASK);
 }
 Add* addFromBin(uint32_t data){
 	return new Add((data >> 12)&REGISTER_MASK,(data >> 17)&REGISTER_MASK,(data >> 22)&OPCODE_MASK);
@@ -111,17 +111,17 @@ XorImmediate* xoriFromBin(uint32_t data){
 	return new XorImmediate((data >> 22)&OPCODE_MASK,(data >> 17)&REGISTER_MASK,(data >> 1)&0xffff);
 }
 Set* setFromBin(uint32_t data){
-	return new Set((data >> 12)&REGISTER_MASK,(data >> 17)&REGISTER_MASK,(data >> 22)&OPCODE_MASK,(Set::TYPE)((data >> 3)&0x07));
+	return new Set((data >> 12)&REGISTER_MASK,(data >> 17)&REGISTER_MASK,(data >> 22)&OPCODE_MASK,(Command::BinaryOp)((data >> 3)&0x07));
 }
 Command* loadFromBin(uint32_t data){
 	uint8_t from = (data >> 17)&REGISTER_MASK,to = (data >> 22)&REGISTER_MASK;
 	uint16_t offset = data & 0x7fff;
-	switch((data >> 15) & 0x3){
-	case SIZE_BYTE:
+	switch(((data >> 15) & 0x3) + Command::SIZE_BYTE){
+	case Command::SIZE_BYTE:
 		return new LoadByte(from,to,offset);
-	case SIZE_HALF:
+	case Command::SIZE_HALF:
 		return new LoadHalf(from,to,offset);
-	case SIZE_WORD:
+	case Command::SIZE_WORD:
 		return new LoadWord(from,to,offset);
 	default:
 		return 0;
@@ -130,12 +130,12 @@ Command* loadFromBin(uint32_t data){
 Command* storeFromBin(uint32_t data){
 	uint8_t from = (data >> 17)&REGISTER_MASK,to = (data >> 22)&REGISTER_MASK;
 	uint16_t offset = data & 0x7fff;
-	switch((data >> 15) & 0x3){
-	case SIZE_BYTE:
+	switch(((data >> 15) & 0x3) + Command::SIZE_BYTE){
+	case Command::SIZE_BYTE:
 		return new StoreByte(to,from,offset);
-	case SIZE_HALF:
+	case Command::SIZE_HALF:
 		return new StoreHalf(to,from,offset);
-	case SIZE_WORD:
+	case Command::SIZE_WORD:
 		return new StoreWord(to,from,offset);
 	default:
 		return 0;
@@ -143,11 +143,11 @@ Command* storeFromBin(uint32_t data){
 }
 ShiftImmediate* shiftiFromBin(uint32_t data){
 	return new ShiftImmediate((data >> 17)&OPCODE_MASK,(data >> 12)&REGISTER_MASK,
-			(data >> 22)&OPCODE_MASK,(ShiftImmediate::DIRECTION)((data >> 6)&0x01),(ShiftImmediate::SIGN)((data >> 5)&0x01));
+			(data >> 22)&OPCODE_MASK,((data >> 6)&0x01)?Command::LEFT : Command::RIGHT,(ShiftImmediate::SIGN)((data >> 5)&0x01));
 }
 Shift* shiftFromBin(uint32_t data){
 	return new Shift((data >> 22)&OPCODE_MASK,(data >> 12)&REGISTER_MASK,
-			(data >> 17)&REGISTER_MASK,(Shift::DIRECTION)((data >> 11)&0x01),(Shift::SIGN)((data >> 10)&0x01));
+			(data >> 17)&REGISTER_MASK,((data >> 11)&0x01)?Command::LEFT : Command::RIGHT,(Shift::SIGN)((data >> 10)&0x01));
 }
 LoadImmediate* loadiFromBin(uint32_t data){
 	return new LoadImmediate((data >> 22)&REGISTER_MASK, data&0x3fffff);

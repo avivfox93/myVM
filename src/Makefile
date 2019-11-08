@@ -4,7 +4,7 @@ disassembler_objects = Command.o Utils.o Registers.o Disassembler.o Hardware.o
 debugger_objects = Command_dbg.o Debugger.o Utils_dbg.o Hardware_dbg.o Registers.o
 runtime_objects = Command.o Utils.o Hardware.o Runtime.o Registers.o
 
-all_objects = Command_dbg.o Command.o Debugger.o Utils.o Utils_dbg.o Hardware.o Hardware_dbg.o Runtime.o Registers.o Disaseembler.o AssemblerGen.o ast.tab.o lex.yy.o
+all_objects = Command_dbg.o Command.o Debugger.o Utils.o Utils_dbg.o Hardware.o Hardware_dbg.o Runtime.o Registers.o Disassembler.o AssemblerGen.o ast.tab.o lex.yy.o
 
 java_home = D:\Program Files\Java\jdk-12.0.1
 #java_home = %JAVA_HOME%

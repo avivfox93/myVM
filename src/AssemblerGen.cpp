@@ -152,6 +152,8 @@ Command* createMlu(enum op op, uint8_t save, uint8_t reg1, uint8_t reg2){
 			return new And(reg1,reg2,save);
 		case OR:
 			return new Or(reg1,reg2,save);
+		case DIV:
+			return new DivF(reg1,reg2,save);
 	}
 	errors++;
 	return new Nop();
@@ -180,6 +182,8 @@ Command* createMluF(enum op op, uint8_t save, uint8_t reg1, uint8_t reg2){
 			return new AddF(reg1,reg2,save);
 		case MUL:
 			return new MulF(reg1,reg2,save);
+		case DIV:
+			return new DivF(reg1,reg2,save);
 	}
 	errors++;
 	return new Nop();
@@ -192,6 +196,8 @@ Command* createMluiF(enum op op, uint8_t save, uint8_t reg, float value){
 			return new AddiF(save,reg,*tmp);
 		case MUL:
 			return new MuliF(save,reg,*tmp);
+		case DIV:
+			return new DiviF(save,reg,*tmp);
 	}
 	errors++;
 	return new Nop();

@@ -9,6 +9,7 @@
 #include <stack>
 #include <string>
 #include <string.h>
+#include <typeinfo>
 #include <map>
 #include "AssemblerGen.h"
 #include "Hardware.h"

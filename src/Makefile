@@ -6,27 +6,27 @@ runtime_objects = Command.o Utils.o Hardware.o Runtime.o Registers.o
 
 all_objects = Command_dbg.o Command.o Debugger.o Utils.o Utils_dbg.o Hardware.o Hardware_dbg.o Runtime.o Registers.o Disassembler.o AssemblerGen.o ast.tab.o lex.yy.o
 
-java_home = D:\Program Files\Java\jdk-12.0.1
+java_home = C:\Program Files\Java\jdk1.8.0_212
 #java_home = %JAVA_HOME%
 
-compiler = x86_64-w64-mingw32-g++
+compiler = g++
 
 all: debugger runtime disassembler assembler
 
 assembler: $(assembler_objects)
-	$(compiler) -o assembler.exe $(assembler_objects)
+	$(compiler) -o  assembler.exe -static-libstdc++ -static-libgcc $(assembler_objects)
 
 disassembler: $(disassembler_objects)
-	$(compiler) -o disassembler.exe $(disassembler_objects)
+	$(compiler) -o disassembler.exe -static-libstdc++ -static-libgcc $(disassembler_objects)
 
 debugger: $(debugger_objects)
 	$(compiler) -shared -DDEBUGGER -o jniDB.dll $(debugger_objects) -static-libstdc++ -static-libgcc -Wl,--add-stdcall-alias -m64
 
 runtime: $(runtime_objects)
-	$(compiler) -o runtime.exe $(runtime_objects)
+	$(compiler) -o runtime.exe -static-libstdc++ -static-libgcc $(runtime_objects)
 
 Command.o: Hardware.h Registers.o
-	$(compiler) -c -o Command.o Command.cpp
+	$(compiler) -c -o Command.o -static-libstdc++ -static-libgcc Command.cpp
 	
 Command_dbg.o: Hardware_dbg.o Registers.o
 	$(compiler) -DDEBUGGER -c -I"$(java_home)\include" -I"$(java_home)\include\win32" -o Command_dbg.o Command.cpp Hardware_dbg.o
@@ -71,4 +71,4 @@ lex.yy.c : ast.lex
 	flex ast.lex
 
 clean:
-	rm $(all_objects) lex.yy.c ast.tab.c ast.tab.h runtime.exe jniDB.dll disassembler.exe assembler.exe
+	del $(all_objects) lex.yy.c ast.tab.c ast.tab.h runtime.exe jniDB.dll disassembler.exe assembler.exe

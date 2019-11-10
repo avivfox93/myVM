@@ -167,6 +167,8 @@ Command* createMlui(enum op op, uint8_t save, uint8_t reg, int16_t value){
 			return new AndImmediate(save,reg,value);
 		case OR:
 			return new AndImmediate(save,reg,value);
+		case DIV:
+			return new Divi(save,reg,value,MluImmediate::SIGNED);
 	}
 	errors++;
 	return new Nop();

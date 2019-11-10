@@ -94,8 +94,10 @@ void addDataLabel(std::string name,uint32_t length, uint8_t size, std::stack<int
 	labelDataMap[name] = memAddress;
 	uint32_t* address32 = (uint32_t*)MEMORY_SEGMENT;
 	uint16_t* address16 = (uint16_t*)MEMORY_SEGMENT;
-	if(lst == nullptr)
+	if(lst == nullptr){
+		memAddress += length*(size/8);
 		return;
+	}
 	while(!lst->empty()){
 		if(size == 16)
 			address16[memAddress - MEMORY_OFFSET] = lst->top();
@@ -104,7 +106,12 @@ void addDataLabel(std::string name,uint32_t length, uint8_t size, std::stack<int
 		else
 			MEMORY_SEGMENT[memAddress - MEMORY_OFFSET] = lst->top();
 		lst->pop();
-		memAddress++;
+		if(size == 16)
+			memAddress += 2;
+		else if(size == 32)
+			memAddress += 4;
+		else
+			memAddress++;
 	}
 }
 
@@ -158,6 +165,29 @@ Command* createMlui(enum op op, uint8_t save, uint8_t reg, int16_t value){
 			return new AndImmediate(save,reg,value);
 		case OR:
 			return new AndImmediate(save,reg,value);
+	}
+	errors++;
+	return new Nop();
+}
+
+Command* createMluF(enum op op, uint8_t save, uint8_t reg1, uint8_t reg2){
+	switch(op){
+		case ADD:
+			return new AddF(reg1,reg2,save);
+		case MUL:
+			return new MulF(reg1,reg2,save);
+	}
+	errors++;
+	return new Nop();
+}
+
+Command* createMluiF(enum op op, uint8_t save, uint8_t reg, float value){
+	uint32_t *tmp = (uint32_t*)&value;
+	switch(op){
+		case ADD:
+			return new AddiF(save,reg,*tmp);
+		case MUL:
+			return new MuliF(save,reg,*tmp);
 	}
 	errors++;
 	return new Nop();

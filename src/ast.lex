@@ -34,6 +34,17 @@ extern int atoi (const char *);
 "addi"		{ yylval.op = ADD; return MLUI; }
 "mul"		{ yylval.op = MUL; return MLU; }
 "muli"		{ yylval.op = MUL; return MLUI; }
+"div"		{ yylval.op = DIV; return MLU; }
+"divi"		{ yylval.op = DIV; return MLUI; }
+
+
+"addf"		{ yylval.op = ADD; return MLUF; }
+"addif"		{ yylval.op = ADD; return MLUIF; }
+"mulf"		{ yylval.op = MUL; return MLUF; }
+"mulif"		{ yylval.op = MUL; return MLUIF; }
+"divf"		{ yylval.op = DIV; return MLUF; }
+"divif"		{ yylval.op = DIV; return MLUIF; }
+
 "and"		{ yylval.op = AND; return MLU; }
 "andi"		{ yylval.op = AND; return MLUI; }
 "or"		{ yylval.op = OR; return MLU; }
@@ -47,6 +58,13 @@ extern int atoi (const char *);
 "sgt"		{ yylval.op = GT; return SET; }
 "sge"		{ yylval.op = GE; return SET; }
 "sle"		{ yylval.op = LE; return SET; }
+
+"seqf"		{ yylval.op = EQ; return SETF; }
+"snef"		{ yylval.op = NEQ; return SETF; }
+"sltf"		{ yylval.op = LT; return SETF; }
+"sgtf"		{ yylval.op = GT; return SETF; }
+"sgef"		{ yylval.op = GE; return SETF; }
+"slef"		{ yylval.op = LE; return SETF; }
 
 "lb"		{ yylval.op = BYTE; return LOAD; }
 "lh"		{ yylval.op = HALF; return LOAD; }
@@ -94,6 +112,9 @@ extern int atoi (const char *);
 "$fp"		{ yylval.ival = _$fp; return REG; }
 "$ra"		{ yylval.ival = _$ra; return REG; }
 
+"$f"[0-9]		{ yylval.ival = _$f0 + atoi(yytext + 2); return REG; }
+"$f"[1-2][0-9]	{ yylval.ival = _$f0 + atoi(yytext + 2); return REG; }
+"$f"[3][0-1]	{ yylval.ival = _$f0 + atoi(yytext + 2); return REG; }
 
 [()=:{}\[\],]      { return yytext[0]; }
       

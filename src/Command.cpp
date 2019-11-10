@@ -45,6 +45,21 @@ uint32_t mluBin(uint8_t sign, uint8_t reg1, uint8_t reg2, uint8_t save, uint8_t 
 	return (sign & 0x01) | ((reg1&REGISTER_MASK) << 12) | ((reg2&REGISTER_MASK) << 17) | ((save&OPCODE_MASK) << 22) | ((opcode&OPCODE_MASK) << 27);
 }
 
+uint32_t mluFBin(uint8_t opcode, uint8_t save, uint8_t reg1, uint8_t reg2){
+	return ((opcode&OPCODE_MASK) << 27) | ((save&REGISTER_MASK) << 22) | ((reg2&REGISTER_MASK) << 17) | ((reg1&REGISTER_MASK) << 12);
+}
+
+uint32_t mluiFBin(uint8_t opcode, uint8_t save, uint8_t reg, uint32_t value){
+	return ((opcode&OPCODE_MASK) << 27) | ((save&REGISTER_MASK)<<22) | ((reg&REGISTER_MASK)<<17) | (((value >> 16)&0xffff) << 1);
+}
+
+uint32_t setF(uint8_t opcode, uint8_t type, uint8_t save, uint8_t reg1, uint8_t reg2){
+	return ((opcode&OPCODE_MASK)<<27) | ((save&REGISTER_MASK)<<22) | ((reg2&&REGISTER_MASK)<<17) | ((reg1&REGISTER_MASK)<<12) | (type & 0x07);
+}
+uint32_t movF(uint8_t opcode, uint8_t dir,uint8_t f, uint8_t v){
+	return ((opcode&OPCODE_MASK)<<27) | ((f&REGISTER_MASK)<<22) | ((v&REGISTER_MASK)<<17) | (dir&0x1);
+}
+
 uint32_t mluiBin(uint8_t sign,uint16_t data, uint8_t reg, uint8_t save, uint8_t opcode){
 	return (sign & 0x01) | ((data&0xffff) << 1) | ((reg&REGISTER_MASK) << 17) | ((save&OPCODE_MASK) << 22) | ((opcode&OPCODE_MASK) << 27);
 }
@@ -158,6 +173,33 @@ Mul* mulFromBin(uint32_t data){
 MulImmediate* muliFromBin(uint32_t data){
 	return new MulImmediate((data >> 22)&OPCODE_MASK,(data >> 17)&REGISTER_MASK,(data >> 1) & 0xffff,(MluImmediate::SIGN)(data&0x1));
 }
+Div* divFrombin(uint32_t data){
+	return new Div((data >> 12)&REGISTER_MASK,(data >> 17)&REGISTER_MASK,(data >> 22)&OPCODE_MASK);
+}
+Divi* diviFromBin(uint32_t data){
+	return new Divi((data >> 22)&OPCODE_MASK,(data >> 17)&REGISTER_MASK,(data >> 1) & 0xffff,(MluImmediate::SIGN)(data&0x1));
+}
+AddF* addFFromBin(uint32_t data){
+	return new AddF((data >> 12)&REGISTER_MASK,(data >> 17)&REGISTER_MASK,(data >> 22)&OPCODE_MASK);
+}
+AddiF* addiFFromBin(uint32_t data){
+	return new AddiF((data >> 22)&OPCODE_MASK,(data >> 17)&REGISTER_MASK,((data >> 1) & 0xffff) << 16);
+}
+MulF* mulFFromBin(uint32_t data){
+	return new MulF((data >> 12)&REGISTER_MASK,(data >> 17)&REGISTER_MASK,(data >> 22)&OPCODE_MASK);
+}
+MuliF* muliFFromBin(uint32_t data){
+	return new MuliF((data >> 22)&OPCODE_MASK,(data >> 17)&REGISTER_MASK,((data >> 1) & 0xffff) << 16);
+}
+DivF* divFFromBin(uint32_t data){
+	return new DivF((data >> 12)&REGISTER_MASK,(data >> 17)&REGISTER_MASK,(data >> 22)&OPCODE_MASK);
+}
+DiviF* diviFFromBin(uint32_t data){
+	return new DiviF((data >> 22)&OPCODE_MASK,(data >> 17)&REGISTER_MASK,((data >> 1) & 0xffff) << 16);
+}
+SetF* setFFromBin(uint32_t data){
+	return new SetF((data >> 12)&REGISTER_MASK,(data >> 17)&REGISTER_MASK,(data >> 22)&OPCODE_MASK,(Command::BinaryOp)((data >> 3)&0x07));
+}
 
 Command* commandFromBin(uint32_t data){
 	switch(data >> 27){
@@ -201,6 +243,24 @@ Command* commandFromBin(uint32_t data){
 			return mulFromBin(data);
 		case OP_MULI:
 			return muliFromBin(data);
+		case OP_DIV:
+			return divFrombin(data);
+		case OP_DIVI:
+			return diviFromBin(data);
+		case OP_ADDF:
+			return addFFromBin(data);
+		case OP_ADDIF:
+			return addiFFromBin(data);
+		case OP_MULF:
+			return mulFFromBin(data);
+		case OP_MULIF:
+			return muliFFromBin(data);
+		case OP_DIVF:
+			return divFFromBin(data);
+		case OP_DIVIF:
+			return diviFFromBin(data);
+		case OP_SETF:
+			return setFFromBin(data);
 	}
 	return new Nop();
 }
@@ -313,17 +373,17 @@ void Syscall::run(){
 	case 6:
 #ifdef DEBUGGER
 		javaImitInputCallback();
-		sscanf(IN_BUFFER,"%f",&F_REGISTERS[0]);
+		sscanf(IN_BUFFER,"%f",(float*)&F_REGISTERS[0]);
 #else
-		scanf("%f",&F_REGISTERS[0]);
+		scanf("%f",(float*)&F_REGISTERS[0]);
 #endif
 		break;
 	case 7:
 #ifdef DEBUGGER
 		javaImitInputCallback();
-		sscanf(IN_BUFFER,"%lf",&F_REGISTERS[0]);
+		sscanf(IN_BUFFER,"%lf",(float*)&F_REGISTERS[0]);
 #else
-		scanf("%lf",&F_REGISTERS[0]);
+		scanf("%lf",(float*)&F_REGISTERS[0]);
 #endif
 		break;
 	case 8:
@@ -402,4 +462,30 @@ void Shift::run(){
 		return;
 	}
 	REGISTERS[_save] |= mask;
+}
+
+void SetF::run(){
+	float *r1 = (float*)&F_REGISTERS[_reg1],*r2 = (float*)&F_REGISTERS[_reg2];
+	uint8_t res = 0;
+	switch(_type){
+	case EQ:
+		res = *r1 == *r2;
+		break;
+	case NEQ:
+		res = *r1 != *r2;
+		break;
+	case GT:
+		res = *r1 > *r2;
+		break;
+	case LT:
+		res = *r1 < *r2;
+		break;
+	case GE:
+		res = *r2 >= *r2;
+		break;
+	case LE:
+		res = *r1 <= *r2;
+		break;
+	}
+	REGISTERS[_save] = res;
 }

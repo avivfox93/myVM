@@ -43,6 +43,40 @@
 #define _$fp	30
 #define _$ra	31
 
+#define _$f0	0
+#define _$f1 	1
+#define _$f2 	2
+#define _$f3 	3
+#define _$f4 	4
+#define _$f5 	5
+#define _$f6 	6
+#define _$f7 	7
+#define _$f8 	8
+#define _$f9 	9
+#define _$f10 	10
+#define _$f11 	11
+#define _$f12 	12
+#define _$f13 	13
+#define _$f14 	14
+#define _$f15 	15
+#define _$f16	16
+#define _$f17	17
+#define _$f18	18
+#define _$f19	19
+#define _$f20	20
+#define _$f21	21
+#define _$f22	22
+#define _$f23	23
+#define _$f24	24
+#define _$f25	25
+#define _$f26	26
+#define _$f27	27
+#define _$f28	28
+#define _$f29	29
+#define _$f30	30
+#define _$f31	31
+
 extern const char* REG_NAME[];
+extern const char* FREG_NAME[];
 
 #endif /* REGISTERS_H_ */

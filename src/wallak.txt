@@ -1,6 +1,10 @@
 .DATA
-A "abcdefghijk\nabc"
+A "abcdefghijk\n"
+B[2]:32
 .CODE
+addif $f0,$f0,100
+li $v0,2
+syscall
 li $t1,5
 li $t2,0
 li $v0 , 2

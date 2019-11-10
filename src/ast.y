@@ -22,8 +22,7 @@ uint32_t data_offset;
 /* note: no semicolon after the union */
 %union {
    int ival;
-   // float numbers in the source program are stored as double
-   double fval;
+   float fval;
    enum op op;
    char name[100];
    char str[200];
@@ -36,7 +35,7 @@ uint32_t data_offset;
 
 %token <ival> INT_NUM REG
 %token <fval> FLOAT_NUM
-%token <op> MLU MLUI SET LOAD STORE SHIFT_A SHIFT_L BRANCH SHIFTV_L SHIFTV_A
+%token <op> MLU MLUI MLUF MLUIF SET SETF LOAD STORE SHIFT_A SHIFT_L BRANCH SHIFTV_L SHIFTV_A
 %token <name> ID
 %token <str> STRING
 %token DATA_SEG CODE_SEG JUMP NOP LOADI SYSCALL
@@ -61,6 +60,10 @@ commands: commands MLU REG ',' REG ',' REG { addCommand(createMlu($2,$3,$5,$7));
 		| commands SHIFTV_L REG ',' REG ',' REG ',' { addCommand(new Shift($3,$5,$7,toOp($2),Command::UNSIGNED)); }
 		| commands LOADI REG ',' INT_NUM{ addCommand(new LoadImmediate($3,$5)); }
 		| commands LOADI REG ',' ID{ addCommand(new LoadImmediate($3,getDataLabelAddress($5))); }
+		| commands MLUF REG ',' REG ',' REG { addCommand(createMluF($2,$3,$5,$7)); }
+		| commands MLUIF REG ',' REG ',' FLOAT_NUM { addCommand(createMluiF($2,$3,$5,$7)); }
+		| commands MLUIF REG ',' REG ',' INT_NUM { addCommand(createMluiF($2,$3,$5,(float)$7)); }
+		| commands SETF REG ',' REG ',' REG ',' REG { addCommand(new SetF($3,$5,$7,toOp($2))); }
 		| commands SYSCALL { addCommand(new Syscall()); }
 		| commands JUMP INT_NUM { addCommand(new Jump($3)); }
 		| commands JUMP ID {Jump* j = new Jump(0); j->setLabel(new std::string($3)); addCommand(j); }
@@ -71,12 +74,14 @@ commands: commands MLU REG ',' REG ',' REG { addCommand(createMlu($2,$3,$5,$7));
 		| /* empty */
 
 data_labels: ID '[' INT_NUM ']' ':' INT_NUM { addDataLabel($1,$3,$6,nullptr); }
-		  | ID '[' INT_NUM ']' ':' INT_NUM "{" num_list "}" { addDataLabel($1,$3,$6,$8); }
+		  | ID '[' INT_NUM ']' ':' INT_NUM '{' num_list '}' { addDataLabel($1,$3,$6,$8); }
 		  | ID   STRING { addStringLabel($1,$2+1); }
 		  | data_labels data_labels
 		  | /* empty */
 
 num_list: INT_NUM { std::stack<int>* t = newList(); $$ = t; addData(t, $1); }
+		| FLOAT_NUM { std::stack<int>* t = newList(); $$ = t; addData(t,*((uint32_t*)&($1))); }
+		| FLOAT_NUM ',' num_list { std::stack<int>* t = newList(); $$ = t; addData($3,*((uint32_t*)&($1))); copyData(t,$3); }
 		| INT_NUM ',' num_list { std::stack<int>* t = newList(); $$ = t; addData($3,$1); copyData(t,$3); }
 
 %%

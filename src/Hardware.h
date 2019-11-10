@@ -29,7 +29,7 @@ extern char IN_BUFFER[];
 #endif
 extern uint8_t MEMORY_SEGMENT[];
 extern uint32_t REGISTERS[];
-extern float F_REGISTERS[];
+extern uint32_t F_REGISTERS[];
 extern uint32_t PC;
 extern uint8_t RUNNING_FLAG;
 

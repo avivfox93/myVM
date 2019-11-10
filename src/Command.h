@@ -38,7 +38,18 @@
 #define OP_LOADI	0x10
 #define OP_MUL		0x11
 #define OP_MULI		0x12
+#define OP_DIV		0x13
+#define OP_DIVI		0x14
 #define OP_SYSCALL	0x1F
+
+#define OP_MULF		0x15
+#define OP_MULIF	0x16
+#define OP_ADDF		0x17
+#define OP_ADDIF	0x18
+#define OP_DIVF		0x19
+#define OP_DIVIF	0x1A
+#define OP_SETF		0x1B
+#define OP_MOVF		0x1C
 
 #define JUMP_MASK		0x07ffffff
 #define REGISTER_MASK	0x0000001f
@@ -63,6 +74,11 @@ uint32_t storeBin(uint16_t offset, uint8_t size, uint8_t from, uint8_t to, uint8
 uint32_t setBin(uint8_t type, uint8_t reg1, uint8_t reg2, uint8_t save, uint8_t opcode);
 uint32_t branchBin(int16_t lines, uint8_t type, uint8_t reg1, uint8_t reg2, uint8_t opcode);
 uint32_t loadiBin(uint32_t data, uint8_t reg, uint8_t opcode);
+
+uint32_t mluFBin(uint8_t opcode, uint8_t save, uint8_t reg1, uint8_t reg2);
+uint32_t mluiFBin(uint8_t opcode, uint8_t save, uint8_t reg, uint32_t value);
+uint32_t setF(uint8_t opcode, uint8_t type, uint8_t save, uint8_t reg1, uint8_t reg2);
+uint32_t movF(uint8_t opcode, uint8_t dir,uint8_t f, uint8_t v);
 
 struct jump{
 	uint32_t address:	27;
@@ -170,6 +186,9 @@ union binData{
 
 class Command{
 public:
+	enum MovDir{
+		FtoV,VtoF
+	};
 	enum BinaryOp{
 		EQ = 0,NEQ = 1,GT = 2,LT = 3,GE = 4,LE = 5, SIZE_BYTE = 6, SIZE_HALF = 7, SIZE_WORD = 8, LEFT = 9, RIGHT = 10
 	};
@@ -183,6 +202,26 @@ public:
 	virtual ~Command(){};
 	virtual std::string* getLabel(){return nullptr;}
 	virtual void setLabel(std::string* label){}
+};
+
+class MluFImmediate : public Command{
+public:
+	MluFImmediate(uint8_t save, uint8_t reg, uint32_t value){
+		_save = save; _reg=reg; _value=value;
+	}
+	virtual uint32_t toBin(){
+		return mluiFBin(0,_save,_reg,_value);
+	}
+	virtual std::string toString(){
+		std::stringstream ss;
+		float* tmp = (float*)&_value;
+		ss << " " << FREG_NAME[_save] << "," << FREG_NAME[_reg] << "," << *tmp;
+		return ss.str();
+	}
+	virtual void run(){};
+protected:
+	uint8_t _save,_reg;
+	uint32_t _value;
 };
 
 class MluImmediate : public Command{
@@ -231,6 +270,197 @@ protected:
 	friend class Mul;
 };
 
+class MluF : public Command{
+public:
+	MluF(uint8_t reg1, uint8_t reg2, uint8_t save){
+		_reg1 = reg1; _reg2 = reg2; _save = save;
+	}
+	virtual void run(){};
+	virtual std::string toString(){
+		std::stringstream ss;
+		ss << " " << FREG_NAME[_save] << "," << FREG_NAME[_reg1] << "," << FREG_NAME[_reg2];
+		return ss.str();
+	}
+	virtual uint32_t toBin(){
+		return mluFBin(0,_save,_reg1,_reg2);
+	}
+protected:
+	uint8_t _reg1, _reg2, _save;
+	friend class Mul;
+};
+
+class MulF : public MluF{
+public:
+	MulF(uint8_t reg1, uint8_t reg2,uint8_t save) : MluF(reg1,reg2,save){}
+	virtual void run(){
+		float *r1 = (float*)&F_REGISTERS[_reg1],*r2 = (float*)&F_REGISTERS[_reg2],*s = (float*)&F_REGISTERS[_save];
+		*s = (*r1) * (*r2);
+	}
+	virtual uint32_t toBin(){
+		return MluF::toBin() | (OP_MULF << 27);
+	}
+	virtual std::string toString(){
+		std::stringstream ss;
+		ss << "mulf" << MluF::toString();
+		return ss.str();
+	}
+protected:
+};
+
+class DivF : public MluF{
+public:
+	DivF(uint8_t reg1, uint8_t reg2,uint8_t save) : MluF(reg1,reg2,save){}
+	virtual void run(){
+		float *r1 = (float*)&F_REGISTERS[_reg1],*r2 = (float*)&F_REGISTERS[_reg2],*s = (float*)&F_REGISTERS[_save];
+		*s = (*r1) / (*r2);
+	}
+	virtual uint32_t toBin(){
+		return MluF::toBin() | (OP_DIVF << 27);
+	}
+	virtual std::string toString(){
+		std::stringstream ss;
+		ss << "mulf" << MluF::toString();
+		return ss.str();
+	}
+protected:
+};
+
+class AddF : public MluF{
+public:
+	AddF(uint8_t reg1, uint8_t reg2,uint8_t save) : MluF(reg1,reg2,save){}
+	virtual void run(){
+		float *r1 = (float*)&F_REGISTERS[_reg1],*r2 = (float*)&F_REGISTERS[_reg2],*s = (float*)&F_REGISTERS[_save];
+		*s = (*r1) + (*r2);
+	}
+	virtual uint32_t toBin(){
+		return MluF::toBin() | (OP_ADDF << 27);
+	}
+	virtual std::string toString(){
+		std::stringstream ss;
+		ss << "addf" << MluF::toString();
+		return ss.str();
+	}
+protected:
+};
+
+class SetF : public Command{
+public:
+	SetF(uint8_t save, uint8_t reg1,uint8_t reg2, enum Command::BinaryOp type){
+		_reg1=reg1;_reg2=reg2;_save=save;_type=type;
+	}
+	virtual void run();
+	virtual uint32_t toBin(){
+		return setF(OP_SETF,(uint8_t)_type,_save,_reg1,_reg2);
+	}
+	virtual std::string toString(){
+		std::stringstream ss;
+		switch(_type){
+		case EQ:
+			ss << "seqf ";
+			break;
+		case NEQ:
+			ss << "snqf ";
+			break;
+		case GT:
+			ss << "sgtf ";
+			break;
+		case LT:
+			ss << "sltf ";
+			break;
+		case GE:
+			ss << "sgef ";
+			break;
+		case LE:
+			ss << "slef ";
+			break;
+		}
+		ss << REG_NAME[_save] << "," << FREG_NAME[_reg1] << "," << FREG_NAME[_reg2];
+		return ss.str();
+	}
+protected:
+	uint8_t _reg1,_reg2,_save;
+	enum Command::BinaryOp _type;
+};
+
+class MovF : public Command{
+public:
+	MovF(uint8_t f, uint8_t v, Command::MovDir dir){
+		_f=f;_v=v;_dir=dir;
+	}
+	virtual uint32_t toBin(){
+		return movF(OP_MOVF,(uint8_t)_dir,_f,_v);
+	}
+	virtual std::string toString(){
+		std::stringstream ss;
+		if(_dir == Command::FtoV)
+			ss << "movfv ";
+		else
+			ss << "movvf ";
+		ss << FREG_NAME[_f] << "," << REG_NAME[_v];
+		return ss.str();
+	}
+	virtual void run(){
+		if(_dir == Command::FtoV)
+			REGISTERS[_v] = (int32_t)F_REGISTERS[_f];
+		else
+			F_REGISTERS[_f] = (float)REGISTERS[_v];
+	}
+protected:
+	uint8_t _f,_v;
+	Command::MovDir _dir;
+};
+
+class AddiF : public MluFImmediate{
+public:
+	AddiF(uint8_t save, uint8_t reg, uint32_t value) : MluFImmediate(save,reg,value){}
+	uint32_t toBin(){
+		return MluFImmediate::toBin() | (OP_ADDIF << 27);
+	}
+	std::string toString(){
+		std::stringstream ss;
+		ss << "addif" << MluFImmediate::toString();
+		return ss.str();
+	}
+	void run(){
+		float *s = (float*)&F_REGISTERS[_save],*r = (float*)&F_REGISTERS[_reg],*v = (float*)&_value;
+		*s = (*r) + (*v);
+	}
+};
+
+class MuliF : public MluFImmediate{
+public:
+	MuliF(uint8_t save, uint8_t reg, uint32_t value) : MluFImmediate(save,reg,value){}
+	uint32_t toBin(){
+		return MluFImmediate::toBin() | (OP_MULIF << 27);
+	}
+	std::string toString(){
+		std::stringstream ss;
+		ss << "mulif" << MluFImmediate::toString();
+		return ss.str();
+	}
+	void run(){
+		float *s = (float*)&F_REGISTERS[_save],*r = (float*)&F_REGISTERS[_reg],*v = (float*)&_value;
+		*s = (*r) * (*v);
+	}
+};
+
+class DiviF : public MluFImmediate{
+public:
+	DiviF(uint8_t save, uint8_t reg, uint32_t value) : MluFImmediate(save,reg,value){}
+	uint32_t toBin(){
+		return MluFImmediate::toBin() | (OP_DIVIF << 27);
+	}
+	std::string toString(){
+		std::stringstream ss;
+		ss << "divif" << MluFImmediate::toString();
+		return ss.str();
+	}
+	void run(){
+		float *s = (float*)&F_REGISTERS[_save],*r = (float*)&F_REGISTERS[_reg],*v = (float*)&_value;
+		*s = (*r) / (*v);
+	}
+};
+
 class Mul : public Mlu{
 public:
 	Mul(uint8_t reg1, uint8_t reg2, uint8_t save, Mlu::SIGN sign) : Mlu(reg1, reg2, save){
@@ -257,6 +487,38 @@ public:
 	}
 private:
 	uint8_t _sign;
+};
+
+class Div : public Mlu{
+public:
+	Div(uint8_t reg1, uint8_t reg2, uint8_t save) : Mlu(reg1,reg2,save){}
+	virtual void run(){
+		REGISTERS[_save] = REGISTERS[_reg1] / REGISTERS[_reg2];
+	}
+	std::string toString(){
+		std::stringstream ss;
+		ss << "div" << Mlu::toString();
+		return ss.str();
+	}
+	uint32_t toBin(){
+		return Mlu::toBin() | (OP_DIV << 27);
+	}
+};
+
+class Divi : public MluImmediate{
+public:
+	Divi(uint8_t save, uint8_t reg, uint16_t data, enum SIGN sign) : MluImmediate(save,reg,data,sign){}
+	virtual void run(){
+		REGISTERS[_save] = REGISTERS[_reg] / _data;
+	}
+	std::string toString(){
+		std::stringstream ss;
+		ss << "divi" << MluImmediate::toString();
+		return ss.str();
+	}
+	uint32_t toBin(){
+		return MluImmediate::toBin() | (OP_DIVI << 27);
+	}
 };
 
 class MulImmediate : public MluImmediate{
@@ -805,6 +1067,14 @@ Command* storeFromBin(uint32_t data);
 ShiftImmediate* shiftiFromBin(uint32_t data);
 Shift* shiftFromBin(uint32_t data);
 LoadImmediate* loadiFromBin(uint32_t data);
-
+Div* divFrombin(uint32_t data);
+Divi* diviFromBin(uint32_t data);
+AddF* addFFromBin(uint32_t data);
+AddiF* addiFFromBin(uint32_t data);
+MulF* mulFFromBin(uint32_t data);
+MuliF* muliFFromBin(uint32_t data);
+DivF* divFFromBin(uint32_t data);
+DiviF* diviFFromBin(uint32_t data);
+SetF* setFFromBin(uint32_t data);
 
 #endif /* COMMAND_H_ */

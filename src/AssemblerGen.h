@@ -19,7 +19,7 @@
 extern uint32_t codeAddress;
 
 enum op{
-	ADD,MUL,AND,OR,XOR,EQ,NEQ,LT,GT,GE,LE,WORD,HALF,BYTE,RIGHT,LEFT
+	ADD,MUL,DIV,AND,OR,XOR,EQ,NEQ,LT,GT,GE,LE,WORD,HALF,BYTE,RIGHT,LEFT
 };
 
 Command::BinaryOp toOp(enum op op);
@@ -49,6 +49,10 @@ void addCodeLabel(std::string id);
 Command* createMlu(enum op op, uint8_t save, uint8_t reg1, uint8_t reg2);
 
 Command* createMlui(enum op op, uint8_t save, uint8_t reg, int16_t value);
+
+Command* createMluF(enum op op, uint8_t save, uint8_t reg1, uint8_t reg2);
+
+Command* createMluiF(enum op op, uint8_t save, uint8_t reg, float value);
 
 Command* createLoad(enum op op, uint8_t to, uint8_t from, int16_t offset);
 

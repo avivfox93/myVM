@@ -7,6 +7,7 @@
 #include "Utils.h"
 #include "Registers.h"
 #include <iostream>
+#include <stdio.h>
 
 void runCommands(Command* commands[]){
 	while(((PC - CODE_OFFSET)/4) < (CODE_SEGMENT_SIZE * 32)){
@@ -17,8 +18,8 @@ void runCommands(Command* commands[]){
 
 size_t loadDataSegmentFromFile(const char* dir, uint8_t* buffer){
 	FILE* file;
-	uint32_t dataSize;
-	file = fopen(dir,"r");
+	uint32_t dataSize = 0;
+	file = fopen(dir,"rb");
 	fread((void*)&dataSize,4,1,file);
 	if(dataSize)
 		fread((void*)buffer,1,dataSize,file);
@@ -31,7 +32,7 @@ size_t loadCodeFromFile(const char* dir, Command* commands[]){
 	size_t pos;
 	size_t idx = 0;
 	uint32_t data,dataSize;
-	file = fopen(dir,"r");
+	file = fopen(dir,"rb");
 	fread((void*)&dataSize,4,1,file);
 	if(dataSize)
 		fread((void*)MEMORY_SEGMENT,1,dataSize,file);
@@ -46,7 +47,7 @@ size_t loadBinaryFromFile(const char* dir, Command* commands[]){
 	size_t pos;
 	size_t idx = 0;
 	uint32_t data,dataSize;
-	file = fopen(dir,"r");
+	file = fopen(dir,"rb");
 	fread((void*)&dataSize,4,1,file);
 	if(dataSize)
 		fread((void*)MEMORY_SEGMENT,1,dataSize,file);
@@ -120,7 +121,7 @@ void printDataSegment(const uint8_t* data, uint32_t size){
 	printf(".DATA:\n");
 	if(!size)
 		return;
-	printf("A = [");
+	printf("A[%d]:8 = [",size);
 	printf("%s",uint8ToHexString(data[0]).c_str());
 	for(uint32_t i = 1 ; i < size ; i++){
 		printf(",%s",uint8ToHexString(data[i]).c_str());

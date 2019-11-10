@@ -106,7 +106,7 @@ main (int argc, char **argv)
       fprintf(stderr, "compilation failed\n");
 	  return 3;
   }else{
-  	out = fopen(argv[2],"w");
+  	out = fopen(argv[2],"wb");
   	genToFile(out);
   }
   

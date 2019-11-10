@@ -9,6 +9,7 @@
 #include <stack>
 #include <string>
 #include <string.h>
+#include <iostream>
 #include <typeinfo>
 #include <map>
 #include "AssemblerGen.h"
@@ -120,8 +121,8 @@ void addStringLabel(std::string name, const char* str){
 	labelDataMap[name] = memAddress;
 	if(str == NULL)
 		return;
-	memcpy((void*)&MEMORY_SEGMENT[memAddress - MEMORY_OFFSET],(const void*)str,strlen(str)-1);
-	MEMORY_SEGMENT[memAddress - MEMORY_OFFSET + strlen(str)] = 0;
+	strcpy((char*)&MEMORY_SEGMENT[memAddress - MEMORY_OFFSET],str);
+//	MEMORY_SEGMENT[memAddress - MEMORY_OFFSET + strlen(str)] = 0;
 	memAddress += strlen(str)+1;
 }
 
@@ -281,53 +282,53 @@ uint32_t hexToInt(const char* str){
 
 
 void stringParser(char* str){
-	char *ptr = strchr(str,'\\');
-	if(ptr == NULL)
-		return;
-	switch(ptr[1]){
-	case 'a':
-		ptr[0] = '\a';
-		break;
-	case 'b':
-		ptr[0] = '\b';
-		break;
-	case 'f':
-		ptr[0] = '\f';
-		break;
-	case 'n':
-		ptr[0] = '\n';
-		break;
-	case 'r':
-		ptr[0] = '\r';
-		break;
-	case 't':
-		ptr[0] = '\t';
-		break;
-	case 'v':
-		ptr[0] = '\v';
-		break;
-	case '\\':
-		ptr[0] = '\\';
-		break;
-	case '\'':
-		ptr[0] = '\'';
-		break;
-	case '"':
-		ptr[0] = '"';
-		break;
-	case '?':
-		ptr[0] = '?';
-		break;
-	case '0':case '1':case '2':case '3':case '4':case '5':case '6':case '7':case '8':case'9':
-		ptr[0] = atoi(ptr + 1);
-		break;
-	case 'x':
-		break;
-	case 'u':
-		break;
-	case 'U':
-		break;
+	char *ptr = str;
+	while((ptr = strchr(ptr,'\\')) != NULL){
+		switch(ptr[1]){
+		case 'a':
+			ptr[0] = '\a';
+			break;
+		case 'b':
+			ptr[0] = '\b';
+			break;
+		case 'f':
+			ptr[0] = '\f';
+			break;
+		case 'n':
+			ptr[0] = '\n';
+			break;
+		case 'r':
+			ptr[0] = '\r';
+			break;
+		case 't':
+			ptr[0] = '\t';
+			break;
+		case 'v':
+			ptr[0] = '\v';
+			break;
+		case '\\':
+			ptr[0] = '\\';
+			break;
+		case '\'':
+			ptr[0] = '\'';
+			break;
+		case '"':
+			ptr[0] = '"';
+			break;
+		case '?':
+			ptr[0] = '?';
+			break;
+		case '0':case '1':case '2':case '3':case '4':case '5':case '6':case '7':case '8':case'9':
+			ptr[0] = atoi(ptr + 1);
+			break;
+		case 'x':
+			break;
+		case 'u':
+			break;
+		case 'U':
+			break;
+		}
+		memcpy(ptr+1,ptr+2,strlen(ptr+1));
 	}
-	memcpy(ptr+1,ptr+2,strlen(ptr+1));
 }
 

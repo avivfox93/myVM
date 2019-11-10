@@ -118,7 +118,7 @@ extern int atoi (const char *);
 
 [()=:{}\[\],]      { return yytext[0]; }
       
-\"(\\.|[^"\\])*\"  {  strcpy (yylval.str, yytext); stringParser(yylval.str); return STRING; }
+\"(\\.|[^"\\])*\"  {  strcpy (yylval.str, yytext); yylval.str[strlen(yylval.str)-1] = 0; stringParser(yylval.str); return STRING; }
 [a-zA-Z][A-Za-z_]*  {  strcpy (yylval.name, yytext); return ID; }
 
   /* C++ style comments: */

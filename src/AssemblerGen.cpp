@@ -101,19 +101,10 @@ void addDataLabel(std::string name,uint32_t length, uint8_t size, std::stack<int
 		return;
 	}
 	while(!lst->empty()){
-		if(size == 16)
-			address16[memAddress - MEMORY_OFFSET] = lst->top();
-		else if(size == 32)
-			address32[memAddress - MEMORY_OFFSET] = lst->top();
-		else
-			MEMORY_SEGMENT[memAddress - MEMORY_OFFSET] = lst->top();
+		uint32_t data = lst->top();
+		memcpy(MEMORY_SEGMENT + memAddress,&data,size/8);
 		lst->pop();
-		if(size == 16)
-			memAddress += 2;
-		else if(size == 32)
-			memAddress += 4;
-		else
-			memAddress++;
+		memAddress += (size/8);
 	}
 }
 
@@ -131,9 +122,14 @@ void addData(std::stack<int>* s, int num){
 }
 
 void copyData(std::stack<int>* to, std::stack<int>* from){
+	std::stack<int> temp;
 	while(!from->empty()){
-		to->push(from->top());
+		temp.push(from->top());
 		from->pop();
+	}
+	while(!temp.empty()){
+		to->push(temp.top());
+		temp.pop();
 	}
 }
 

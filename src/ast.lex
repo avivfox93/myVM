@@ -70,9 +70,13 @@ extern int atoi (const char *);
 "lh"		{ yylval.op = HALF; return LOAD; }
 "lw"		{ yylval.op = WORD; return LOAD; }
 
+"lf"		{ return LOADF; }
+
 "sb"		{ yylval.op = BYTE; return STORE; }
 "sh"		{ yylval.op = HALF; return STORE; }
 "sw"		{ yylval.op = WORD; return STORE; }
+
+"sf"		{ return STOREF; }
 
 "sal"		{ yylval.op = LEFT; return SHIFT_A; }
 "sar"		{ yylval.op = RIGHT; return SHIFT_A; }
@@ -91,6 +95,8 @@ extern int atoi (const char *);
 "j"			{ return JUMP; }
 
 "nop"		{ return NOP; }
+
+"movf"		{ return MOVF; }
 
 "beq"		{ yylval.op = EQ; return BRANCH; }
 "bne"		{ yylval.op = NEQ; return BRANCH; }
@@ -112,13 +118,13 @@ extern int atoi (const char *);
 "$fp"		{ yylval.ival = _$fp; return REG; }
 "$ra"		{ yylval.ival = _$ra; return REG; }
 
-"$f"[0-9]		{ yylval.ival = _$f0 + atoi(yytext + 2); return REG; }
-"$f"[1-2][0-9]	{ yylval.ival = _$f0 + atoi(yytext + 2); return REG; }
-"$f"[3][0-1]	{ yylval.ival = _$f0 + atoi(yytext + 2); return REG; }
+"$f"[0-9]		{ yylval.ival = _$f0 + atoi(yytext + 2); return FREG; }
+"$f"[1-2][0-9]	{ yylval.ival = _$f0 + atoi(yytext + 2); return FREG; }
+"$f"[3][0-1]	{ yylval.ival = _$f0 + atoi(yytext + 2); return FREG; }
 
 [()=:{}\[\],]      { return yytext[0]; }
       
-\"(\\.|[^"\\])*\"  {  strcpy (yylval.str, yytext); yylval.str[strlen(yylval.str)-1] = 0; stringParser(yylval.str); return STRING; }
+\"(\\.|[^"\\])*\"  {  strcpy (yylval.str, yytext+1); yylval.str[strlen(yylval.str)-1] = 0; stringParser(yylval.str); return STRING; }
 [a-zA-Z][A-Za-z_]*  {  strcpy (yylval.name, yytext); return ID; }
 
   /* C++ style comments: */

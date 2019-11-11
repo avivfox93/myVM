@@ -33,12 +33,12 @@ uint32_t data_offset;
    
 }
 
-%token <ival> INT_NUM REG
+%token <ival> INT_NUM REG FREG
 %token <fval> FLOAT_NUM
 %token <op> MLU MLUI MLUF MLUIF SET SETF LOAD STORE SHIFT_A SHIFT_L BRANCH SHIFTV_L SHIFTV_A
 %token <name> ID
 %token <str> STRING
-%token DATA_SEG CODE_SEG JUMP NOP LOADI SYSCALL
+%token DATA_SEG CODE_SEG JUMP NOP LOADI SYSCALL MOVF LOADF STOREF
 //type commands 
 
 %type <lst> num_list
@@ -60,10 +60,10 @@ commands: commands MLU REG ',' REG ',' REG { addCommand(createMlu($2,$3,$5,$7));
 		| commands SHIFTV_L REG ',' REG ',' REG ',' { addCommand(new Shift($3,$5,$7,toOp($2),Command::UNSIGNED)); }
 		| commands LOADI REG ',' INT_NUM{ addCommand(new LoadImmediate($3,$5)); }
 		| commands LOADI REG ',' ID{ addCommand(new LoadImmediate($3,getDataLabelAddress($5))); }
-		| commands MLUF REG ',' REG ',' REG { addCommand(createMluF($2,$3,$5,$7)); }
-		| commands MLUIF REG ',' REG ',' FLOAT_NUM { addCommand(createMluiF($2,$3,$5,$7)); }
-		| commands MLUIF REG ',' REG ',' INT_NUM { addCommand(createMluiF($2,$3,$5,(float)$7)); }
-		| commands SETF REG ',' REG ',' REG ',' REG { addCommand(new SetF($3,$5,$7,toOp($2))); }
+		| commands MLUF FREG ',' FREG ',' REG { addCommand(createMluF($2,$3,$5,$7)); }
+		| commands MLUIF FREG ',' FREG ',' FLOAT_NUM { addCommand(createMluiF($2,$3,$5,$7)); }
+		| commands MLUIF FREG ',' FREG ',' INT_NUM { addCommand(createMluiF($2,$3,$5,(float)$7)); }
+		| commands SETF REG ',' FREG ',' FREG ',' REG { addCommand(new SetF($3,$5,$7,toOp($2))); }
 		| commands SYSCALL { addCommand(new Syscall()); }
 		| commands JUMP INT_NUM { addCommand(new Jump($3)); }
 		| commands JUMP ID {Jump* j = new Jump(0); j->setLabel(new std::string($3)); addCommand(j); }
@@ -71,12 +71,16 @@ commands: commands MLU REG ',' REG ',' REG { addCommand(createMlu($2,$3,$5,$7));
 		| commands BRANCH REG ',' REG ',' INT_NUM { addCommand(new Branch($7,toOp($2),$3,$5)); }
 		| commands BRANCH REG ',' REG ',' ID { Branch* b = new Branch(0,toOp($2),$3,$5); b->setLabel(new std::string($7)); addCommand(b); }
 		| commands ID ':' { addCodeLabel($2); }
+		| commands MOVF FREG ',' REG { addCommand(new MovF($3,$5,Command::VtoF)); }
+		| commands MOVF REG ',' FREG { addCommand(new MovF($3,$5,Command::FtoV)); }
+		| commands STOREF REG ',' FREG ',' INT_NUM { addCommand(new StoreF($3,$5,$7)); }
+		| commands LOADF FREG ',' REG ',' INT_NUM { addCommand(new LoadF($5,$3,$7)); }
 		| /* empty */
 
-data_labels: ID '[' INT_NUM ']' ':' INT_NUM { addDataLabel($1,$3,$6,nullptr); }
-		  | ID '[' INT_NUM ']' ':' INT_NUM '{' num_list '}' { addDataLabel($1,$3,$6,$8); }
-		  | ID   STRING { addStringLabel($1,$2+1); }
-		  | data_labels data_labels
+data_labels:
+		  | data_labels ID '[' INT_NUM ']' ':' INT_NUM '{' num_list '}' { addDataLabel($2,$4,$7,$9); } 
+		  | data_labels ID '[' INT_NUM ']' ':' INT_NUM { addDataLabel($2,$4,$7,nullptr); }
+		  | data_labels ID   STRING { addStringLabel($2,$3); }
 		  | /* empty */
 
 num_list: INT_NUM { std::stack<int>* t = newList(); $$ = t; addData(t, $1); }

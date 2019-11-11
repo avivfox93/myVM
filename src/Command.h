@@ -50,6 +50,8 @@
 #define OP_DIVIF	0x1A
 #define OP_SETF		0x1B
 #define OP_MOVF		0x1C
+#define OP_LOADF	0x1D
+#define OP_STOREF	0x1E
 
 #define JUMP_MASK		0x07ffffff
 #define REGISTER_MASK	0x0000001f
@@ -79,6 +81,8 @@ uint32_t mluFBin(uint8_t opcode, uint8_t save, uint8_t reg1, uint8_t reg2);
 uint32_t mluiFBin(uint8_t opcode, uint8_t save, uint8_t reg, uint32_t value);
 uint32_t setF(uint8_t opcode, uint8_t type, uint8_t save, uint8_t reg1, uint8_t reg2);
 uint32_t movF(uint8_t opcode, uint8_t dir,uint8_t f, uint8_t v);
+uint32_t loadFBin(uint16_t offset, uint8_t size, uint8_t from, uint8_t to, uint8_t opcode);
+uint32_t storeFBin(uint16_t offset, uint8_t size, uint8_t from, uint8_t to, uint8_t opcode);
 
 struct jump{
 	uint32_t address:	27;
@@ -392,11 +396,11 @@ public:
 	}
 	virtual std::string toString(){
 		std::stringstream ss;
+		ss << "movf ";
 		if(_dir == Command::FtoV)
-			ss << "movfv ";
+			ss << REG_NAME[_v] << "," << FREG_NAME[_f];
 		else
-			ss << "movvf ";
-		ss << FREG_NAME[_f] << "," << REG_NAME[_v];
+			ss << FREG_NAME[_f] << "," << REG_NAME[_v];
 		return ss.str();
 	}
 	virtual void run(){
@@ -870,6 +874,28 @@ public:
 	}
 };
 
+class LoadF : public Command{
+public:
+	LoadF(uint8_t from, uint8_t to, int16_t offset){
+		_from = from; _to = to; _offset = offset;
+	}
+	virtual uint32_t toBin(){return loadBin(_offset,SIZE_WORD - SIZE_BYTE,_from,_to,OP_LOADF);};
+	virtual std::string toString(){
+		std::stringstream ss;
+		ss << "lf " << FREG_NAME[_to] << "," << REG_NAME[_from] << "," << _offset;
+		return ss.str();
+	}
+	virtual void run(){
+		uint32_t* ptr;
+		ptr= (uint32_t*)&MEMORY_SEGMENT[memoryToIndex(REGISTERS[_from] + _offset)];
+		F_REGISTERS[_to] = *ptr;
+	}
+
+protected:
+	uint8_t _from,_to;
+	int16_t _offset;
+};
+
 class Store : public Command{
 public:
 	Store(uint8_t addressReg, uint8_t dataReg, int16_t offset){
@@ -939,6 +965,29 @@ public:
 		uint8_t *ptr = &MEMORY_SEGMENT[memoryToIndex(REGISTERS[_addressReg] + _offset)];
 		*ptr = REGISTERS[_dataReg];
 	}
+};
+
+class StoreF : public Command{
+public:
+	StoreF(uint8_t addressReg, uint8_t dataReg, int16_t offset){
+		_addressReg = addressReg; _dataReg = dataReg; _offset = offset;
+	}
+	virtual uint32_t toBin(){
+		return storeBin(_offset,SIZE_WORD - SIZE_BYTE,_dataReg,_addressReg,OP_STOREF);
+	}
+	std::string toString(){
+		std::stringstream ss;
+		ss << "sf " << REG_NAME[_addressReg] << "," << FREG_NAME[_dataReg] << "," << _offset;
+		return ss.str();
+	}
+	virtual void run(){
+		uint32_t *ptr;
+		ptr = (uint32_t*)&MEMORY_SEGMENT[memoryToIndex(REGISTERS[_addressReg] + _offset)];
+		*ptr = F_REGISTERS[_dataReg];
+	}
+protected:
+	uint8_t _addressReg,_dataReg;
+	int16_t _offset;
 };
 
 class Syscall : public Command{
@@ -1076,5 +1125,8 @@ MuliF* muliFFromBin(uint32_t data);
 DivF* divFFromBin(uint32_t data);
 DiviF* diviFFromBin(uint32_t data);
 SetF* setFFromBin(uint32_t data);
+MovF* movFFromBin(uint32_t data);
+LoadF* loadFFromBin(uint32_t data);
+StoreF* storeFFromBin(uint32_t data);
 
 #endif /* COMMAND_H_ */

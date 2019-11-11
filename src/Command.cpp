@@ -37,6 +37,11 @@ void javaImitInputCallback() {
 }
 #endif
 
+union FLOAT{
+	uint32_t num;
+	float val;
+};
+
 uint32_t jumpBin(uint32_t address){
 	return (address & JUMP_MASK) | ((OP_JUMP&OPCODE_MASK) << 27);
 }
@@ -92,6 +97,10 @@ uint32_t loadiBin(uint32_t data, uint8_t reg, uint8_t opcode){
 	return (data & 0x3fffff) | ((reg) << 22) | ((opcode & OPCODE_MASK) << 27);
 }
 
+MovF* movFFromBin(uint32_t data){
+	return new MovF((data >> 22)&REGISTER_MASK,(data >> 17)&REGISTER_MASK,(Command::MovDir)(data&0x1));
+}
+
 Jump* jumpFromBin(uint32_t data){
 	return new Jump((data << 5)>>5);
 }
@@ -142,6 +151,13 @@ Command* loadFromBin(uint32_t data){
 		return 0;
 	}
 }
+
+LoadF* loadFFromBin(uint32_t data){
+	uint8_t from = (data >> 17)&REGISTER_MASK,to = (data >> 22)&REGISTER_MASK;
+	uint16_t offset = data & 0x7fff;
+	return new LoadF(from,to,offset);
+}
+
 Command* storeFromBin(uint32_t data){
 	uint8_t from = (data >> 17)&REGISTER_MASK,to = (data >> 22)&REGISTER_MASK;
 	uint16_t offset = data & 0x7fff;
@@ -156,6 +172,13 @@ Command* storeFromBin(uint32_t data){
 		return 0;
 	}
 }
+
+StoreF* storeFFromBin(uint32_t data){
+	uint8_t from = (data >> 17)&REGISTER_MASK,to = (data >> 22)&REGISTER_MASK;
+	uint16_t offset = data & 0x7fff;
+	return new StoreF(to,from,offset);
+}
+
 ShiftImmediate* shiftiFromBin(uint32_t data){
 	return new ShiftImmediate((data >> 17)&OPCODE_MASK,(data >> 12)&REGISTER_MASK,
 			(data >> 22)&OPCODE_MASK,((data >> 6)&0x01)?Command::LEFT : Command::RIGHT,(ShiftImmediate::SIGN)((data >> 5)&0x01));
@@ -261,6 +284,12 @@ Command* commandFromBin(uint32_t data){
 			return diviFFromBin(data);
 		case OP_SETF:
 			return setFFromBin(data);
+		case OP_MOVF:
+			return movFFromBin(data);
+		case OP_STOREF:
+			return storeFFromBin(data);
+		case OP_LOADF:
+			return loadFFromBin(data);
 	}
 	return new Nop();
 }
@@ -343,14 +372,14 @@ void Syscall::run(){
 		break;
 	case 2:
 #ifdef DEBUGGER
-		sprintf(OUT_BUFFER,"%f",F_REGISTERS[12]);
+		sprintf(OUT_BUFFER,"%f",*((float*)&F_REGISTERS[12]));
 #else
-		printf("%f", F_REGISTERS[12]);
+		printf("%f", *((float*)&F_REGISTERS[12]));
 #endif
 		break;
 	case 3:
 #ifdef DEBUGGER
-		sprintf(OUT_BUFFER,"%lf",*((double*)&REGISTERS[12]));
+		sprintf(OUT_BUFFER,"%lf",*((double*)&F_REGISTERS[12]));
 #else
 		printf("%lf", *((double*)&REGISTERS[12]));
 #endif

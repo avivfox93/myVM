@@ -6,10 +6,12 @@ runtime_objects = Command.o Utils.o Hardware.o Runtime.o Registers.o
 
 all_objects = Command_dbg.o Command.o Debugger.o Utils.o Utils_dbg.o Hardware.o Hardware_dbg.o Runtime.o Registers.o Disassembler.o AssemblerGen.o ast.tab.o lex.yy.o
 
-java_home = C:\Program Files\Java\jdk1.8.0_212
+java_home = D:\Program Files\Java\jdk-12.0.1
+#java_home = C:\Program Files\Java\jdk1.8.0_212
 #java_home = %JAVA_HOME%
 
-compiler = g++
+compiler = x86_64-w64-mingw32-g++
+#compiler = g++
 
 all: debugger runtime disassembler assembler
 
@@ -71,4 +73,4 @@ lex.yy.c : ast.lex
 	flex ast.lex
 
 clean:
-	del $(all_objects) lex.yy.c ast.tab.c ast.tab.h runtime.exe jniDB.dll disassembler.exe assembler.exe
+	rm $(all_objects) lex.yy.c ast.tab.c ast.tab.h runtime.exe jniDB.dll disassembler.exe assembler.exe
